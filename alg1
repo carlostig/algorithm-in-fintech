@@ -1,0 +1,39 @@
+import xlrd 
+import numpy as np
+from scipy.optimize import minimize # NON LINEAR, NON PIU LINPROG
+from scipy.optimize import LinearConstraint # è una classe, già creatà che gia contiene tutte le possibile forme di constraints
+
+workbook= xlrd.open_workbook('PTF.xls') # Apre il foglio excel denominato PTF
+worksheet= workbook.sheet_by_index(0) # Prende il primo foglio di excel
+
+n=5
+data= np.zeros([41-6,n]) #Alloco la memoria per una matrice 35x5 e faccio nested loop join
+assetloc= np.array([3,5,7,17,24])
+for j in range (0,n):
+    for i in range (6,41):
+        data[i-6,j]=worksheet.cell(i,assetloc[j]).value # FUNCTION
+
+# BLOCCO  2; COSTRUISCO I VETTORI  MEDIA E COVARIANZA
+mean_vector = np.zeros(n)
+cov_matrix= np.zeros(n,n)
+
+mean_vector = np.mean(data,axis=0)
+cov_matrix=np.cov(data,rowvar=False)  # I valori che stiamo considerando per adesso sono quelli lungo la colonna, rowvar è una funzione che di norma considera la variable da computare sulle righe; sulle righe noi abbiamo le osservazioni
+t=0.023 # rendimento target fissato apriori 
+e= np.ones(n)
+x0= np.zeros(n) #starting point, 
+
+print(mean_vector)
+print(cov_matrix)
+
+#Definisco i bounds
+dec_var= [(0,np.inf)]*n # GENERALIZZO A SECONDA DEGLI N
+
+def ptfret_var(x):
+    return np.dot(x,np.matmul(cov_matrix,x))
+
+linconstr= LinearConstraint([mean_vector,e],[t,1], [t,1])
+
+opt_ptf= minimize(ptfret_var, x0, method=None,jac=None,hess=None,bounds=dec_var,constraints=(linconstr),tol=None)
+
+print(opt_ptf)
